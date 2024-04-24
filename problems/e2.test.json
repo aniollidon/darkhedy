@@ -1,0 +1,22 @@
+{
+  "level": 12,
+  "title": "Element aleatori",
+  "statement": "Escriu un programa que creeï una llista de 3 animals (gos, gat, cavall) i mostri un d'ells a l'atzar. El text de sortida ha de ser: Vull un [animal aleatòri]. ",
+  "image": "",
+  "tests": [
+    {
+      "@animal@": ["gat", "gos", "cavall"],
+      "output": "Vull un @animal@."
+    }
+  ],
+  "expected": [
+    {
+      "word": "at random",
+      "count": 1
+    },
+    {
+      "word": "print",
+      "count": 1
+    }
+  ]
+}
