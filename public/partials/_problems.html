@@ -1,0 +1,97 @@
+<ul class="nav nav-tabs" role="tablist" id="tabs-problems">
+</ul>
+<div class="row">
+    <div class="col-12 grid-margin stretch-card">
+        <div class="card">
+            <div class="card-body">
+                <h4 id="statement-title" class="card-title">Title</h4>
+                <div id="statement"></div>
+                <noscript>Hedy requires Javascript to be enabled in your browser.</noscript>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4 grid-margin stretch-card">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Codi</h4>
+                <select id="htest_problem"> </select>
+                <div class="w-full max-w-screen-2xl mx-auto" id="code_content_container">
+                    <div tabindex="0" class="">
+                        <div id="editor-area"
+                             class="">
+                            <div data-devmodeheight="22rem,36rem" class="flex flex-col order-1 relative"
+                                 id="code_editor"
+                                 style="height: 22rem">
+                                <!-- The actual editor -->
+                                <div id="editor"
+                                     style="background: #272822; font-size:0.95em; color: white; direction: ltr;"
+                                     lang="en" blurred='false'
+                                     class="w-full flex-1 text-lg rounded min-h-0 overflow-hidden fixed-editor-height"></div>
+                            </div>
+                        </div>
+                        <!-- buttons toolbar -->
+                        <div class="flex justify-between mt-4">
+                            <div>
+                                <button class="btn btn-primary" id="htest_submit">Testeja el teu codi</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-8 grid-margin stretch-card">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Resultats</h4>
+                <div id="output"
+                     class="w-full flex-1 text-lg rounded min-h-0 overflow-hidden"></div>
+                <div class="testing-area">
+                    <div class="w-full max">
+                        <div id="htest_result"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row"   id="test-aux-info" style="display: none">
+    <div class="col-12 grid-margin stretch-card">
+        <div class="card">
+            <div class="card-body" id="test-aux-info-content">
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://d1xliaqnpftsm2.cloudfront.net/static-703b8d8b27d10850673f07cc7f15c740d4612f0b/vendor/jquery.min.js"
+        type="text/javascript" crossorigin="anonymous"></script>
+<script src="https://d1xliaqnpftsm2.cloudfront.net/static-703b8d8b27d10850673f07cc7f15c740d4612f0b/vendor/htmx-1.8.5.min.js"
+        type="text/javascript" crossorigin="anonymous"></script>
+<script src="https://d1xliaqnpftsm2.cloudfront.net/static-703b8d8b27d10850673f07cc7f15c740d4612f0b/js/appbundle.js"
+        type="text/javascript" crossorigin="anonymous"></script>
+
+<script>hedyApp.initialize({
+    lang: "en",
+    level: 12,
+    keyword_language: "en",
+
+    javascriptPageOptions: {
+        "page": "code",
+        "lang": "en",
+        "level": 12,
+        "suppress_save_and_load_for_slides": true
+    },
+});
+</script>
+
+
+<script src="js/ext/diff.min.js"></script>
+<script src="js/problems.js"></script>
+
+

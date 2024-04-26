@@ -1,0 +1,11 @@
+.test-badge{
+    padding: 0.2rem 0.3rem;
+    margin-left: 0.2rem;
+    vertical-align: top;
+    margin-top: 1px;
+}
+
+.nav-tabs .nav-link.active {
+    background-color: #191C24;
+    border-bottom-color: #00000000;
+}

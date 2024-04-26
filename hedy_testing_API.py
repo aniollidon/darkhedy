@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify, send_from_directory
 from hedy_basic import execute_hedy_str, hedy_testing
 import os
 import json
+import build_front
 
 app = Flask(__name__)
 
@@ -42,17 +43,17 @@ def hedy_run_test():
     codi = request.json['code']
 
     try:
-        tests_passed, total_tests, tests_failed = hedy_testing(codi, test)
-        return jsonify({'tests_passed': tests_passed, 'total_tests': total_tests, 'tests_failed': tests_failed}), 200
+        tests_passed, total_tests, tests, tests_failed = hedy_testing(codi, test)
+        return jsonify({'tests_passed': tests_passed, 'total_tests': total_tests,
+                        'tests': tests, 'tests_failed': tests_failed}), 200
     except Exception as e:
         # raise e
         return jsonify({'Hedy Error': str(e)}), 500
 
 
-
 @app.route('/')
 def serve_index():
-    return send_from_directory('public', 'index.html')
+    return build_front.base(build_front.problems_test())
 
 
 @app.route('/<path:path>')
