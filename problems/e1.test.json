@@ -1,7 +1,7 @@
 {
-  "level": 12,
+  "level": 6,
   "title": "Salutació",
-  "statement": "Escriu un programa que demani el nom de l'usuari i després saludi a l'usuari. El programa ha de demanar el nom de l'usuari amb el missatge \"Quin és el teu nom?\" i després ha de mostrar el missatge \"Hola [nom]\". Per exemple, si l'usuari introdueix \"Aniol\", el programa ha de mostrar \"Hola Aniol\".",
+  "statement": "Escriu un programa que demani el nom de l'usuari i després saludi a l'usuari. <br> El programa ha de demanar el nom de l'usuari amb el missatge: <code>Quin és el teu nom?</code> i després ha de mostrar el missatge: <code>Hola [nom]</code>. Per exemple, si l'usuari introdueix <code>Aniol</code>, el programa ha de mostrar <code>Hola Aniol</code>.",
   "image": "",
   "tests": [
     {

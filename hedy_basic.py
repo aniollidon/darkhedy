@@ -1,6 +1,7 @@
 import sys
 import time
 import json
+import re
 
 sys.path.append('hedy/')
 import hedy
@@ -38,37 +39,128 @@ class Testing:
             return "\n".join(self.outputs)
 
 
-def execute_hedy(hedy_code, level, testing=None):
-    print(hedy_code)
+def hedy_error_to_response(ex, keyword_lang='en'):
+    return {
+        "Error": ex.error_code,
+        "Location": ex.error_location
+    }
+
+
+def parse(code, level, lang='en', keyword_lang='en'):
+    response = {}
+    transpile_result = {}
+    username = None
+    exception = None
+
     try:
-        hcode = hedy.transpile(hedy_code, level)
-    except Exception as e:
-        print("Aquest codi Hedy no funciona: Error:", e)
-        raise e
+        try:
+            transpile_result = hedy.transpile(code, level, lang, is_debug=False)
+        except hedy.exceptions.WarningException as ex:
+            translated_error = ex.error_code
+            if isinstance(ex, hedy.exceptions.InvalidSpaceException):
+                response['Warning'] = translated_error
+            elif isinstance(ex, hedy.exceptions.UnusedVariableException):
+                response['Warning'] = translated_error
+            else:
+                response['Error'] = translated_error
+            response['Location'] = ex.error_location
+            transpile_result = ex.fixed_result
+            exception = ex
+        except hedy.exceptions.UnquotedEqualityCheckException as ex:
+            response['Error'] = ex.error_code
+            response['Location'] = ex.error_location
+            exception = ex
 
-    python_code = hcode.code
+    except hedy.exceptions.HedyException as ex:
+        response = hedy_error_to_response(ex)
+        exception = ex
 
-    if testing:
-        python_code = python_code.replace("input", "testing.c_input")
-        python_code = python_code.replace("print", "testing.c_print")
+    except Exception as E:
+        raise E
+        print(f"error transpiling {code}")
+        response["Error"] = str(E)
+        exception = E
 
-    exec(python_code)
+    return response, transpile_result
+
+
+def execute_hedy(hedy_code, level, testing=None):
+    response, transpile_result = parse(hedy_code, level, 'ca', 'ca')
+
+    if 'Error' not in response:
+        python_code = transpile_result.code
+
+        if testing:
+            python_code = python_code.replace("input", "testing.c_input")
+            python_code = python_code.replace("print", "testing.c_print")
+
+        try:
+            exec(python_code)
+
+        except Exception as e:
+            response["Error"] = "Unexpected error"
+            response["details"] = str(e)
+
+    return response
+
+
+def location_to_line_column(location):
+    # Si és una llista és una posició de línes
+    if isinstance(location, list):
+        return "línia " + str(location[0])
+    else:
+        return "línia " + str(location[0]) + ", columna " + str(location[1])
 
 
 def execute_hedy_str(hedy_code, level, inputs=None):
     testing = Testing()
     if inputs:
         testing.init_input(inputs)
-    execute_hedy(hedy_code, level, testing)
+    response = execute_hedy(hedy_code, level, testing)
+
+    if 'Error' in response:
+        return "!!Error en l'execució de l'Hedy, error de \"" + response["Error"] + "\" a la " + \
+            location_to_line_column(response["Location"]) + "!!"
+    elif 'Warning' in response:
+        return testing.output_string() + "\n!!" + "Warning d'Hedy: \"" + response["Warning"] + "\" a la " + \
+            location_to_line_column(response["Location"]) + "!!"
+
     return testing.output_string()
+
+
+import re
+
+
+def validar_random(input_text, estructura):
+    regex_pattern = estructura["output"]
+    variables = re.findall(r'@(\w+)', regex_pattern)
+
+    for variable in variables:
+        if "@" + variable not in estructura:
+            raise ValueError(f"No s'ha trobat la definició per a la variable '{variable}' en l'estructura.")
+
+    for variable, valors in estructura.items():
+        if variable.startswith("@"):
+            regex_pattern = regex_pattern.replace("@" + variable[1:], "(" + "|".join(valors) + ")")
+
+    regex_pattern = "^" + regex_pattern + "$"
+    regex = re.compile(regex_pattern)
+
+    if regex.match(input_text):
+        return True
+    else:
+        return False
 
 
 def hedy_testing(hedy_code, test_object):
     level = int(test_object['level'])
     tests_passed = 0
     total_tests = 0
-    tests = []
+    test_results = []
     tests_failed = []
+
+    # Esborra els comentaris de hedy_code en cas que n'hi hagi
+    hedy_code = re.sub(r'#.*', '', hedy_code)
 
     if 'tests' in test_object:
         total_tests += len(test_object['tests'])
@@ -76,29 +168,56 @@ def hedy_testing(hedy_code, test_object):
             testing = Testing()
             input_test = None
             test_description = "Execució del programa"
-            tests.append({"description": test_description, "inputs": None,
+            test_results.append({"description": test_description, "inputs": None,
                           "result": "success"})
             if 'inputs' in t:
                 testing.init_input(t['inputs'])
                 test_description = "Comparació amb entrada determinada"
-                tests[-1]["inputs"] = t['inputs']
-                tests[-1]["description"] = test_description
-            try:
-                execute_hedy(hedy_code, level, testing)
-            except Exception as e:
+                test_results[-1]["inputs"] = t['inputs']
+                test_results[-1]["description"] = test_description
+
+            response = execute_hedy(hedy_code, level, testing)
+
+            if 'Error' in response:
                 tests_failed.append({
                     "description": test_description,
                     "inputs": t['inputs'] if 'inputs' in t else None,
                     "type": "execution_error",
                     "error": "Error en l'execució de l'Hedy",
-                    "details": str(e)
+                    "details": "Error de \"" + response["Error"] + "\" a la " +
+                               location_to_line_column(response["Location"])
                 })
-                tests[-1]["result"] = "execution_error"
+                test_results[-1]["result"] = "execution_error"
                 break
+            elif 'Warning' in response:
+                tests_failed.append({
+                    "description": test_description,
+                    "inputs": t['inputs'] if 'inputs' in t else None,
+                    "type": "execution_warning",
+                    "error": "Warning en l'execució de l'Hedy",
+                    "details": "Warning de \"" + response["Warning"] + "\" a la " +
+                               location_to_line_column(response["Location"])
+                })
+                test_results[-1]["result"] = "execution_warning"
 
             if 'output' in t:
-                tests[-1]["output"] = t['output']
-                if testing.output_string() == t['output']:
+                test_results[-1]["output"] = t['output']
+
+                regularcheck = False
+
+                # si hi ha alguna clau a test_results[-1] que començi amb @
+                # vol dir que és una expressió regular
+                for key in t:
+                    if key[0] == "@":
+                        regularcheck = True
+                        break
+
+                if regularcheck:
+                    check = validar_random(testing.output_string(), t)
+                else:
+                    check = testing.output_string() == t['output']
+
+                if check:
                     tests_passed += 1
                 else:
                     tests_failed.append({
@@ -109,13 +228,13 @@ def hedy_testing(hedy_code, test_object):
                         "desired": t['output'],
                         "received": testing.output_string()
                     })
-                    tests[-1]["result"] = "failed"
+                    test_results[-1]["result"] = "failed"
 
     if 'expected' in test_object:
         total_tests += len(test_object['expected'])
         for expected in test_object['expected']:
             test_description = "Cerca &quot;" + expected['word'] + "&quot;"
-            tests.append({"description": test_description, "result": "success"})
+            test_results.append({"description": test_description, "result": "success"})
             if 'count' in expected:
                 if hedy_code.count(expected['word']) == expected['count']:
                     tests_passed += 1
@@ -128,7 +247,7 @@ def hedy_testing(hedy_code, test_object):
                         "expected": expected['count'],
                         "found": hedy_code.count(expected['word'])
                     })
-                    tests[-1]["result"] = "failed"
+                    test_results[-1]["result"] = "failed"
             else:
                 if hedy_code.find(expected['word']) != -1:
                     tests_passed += 1
@@ -140,27 +259,24 @@ def hedy_testing(hedy_code, test_object):
                         "expected": "*",
                         "found": "0"
                     })
-                    tests[-1]["result"] = "failed"
+                    test_results[-1]["result"] = "failed"
 
-    return tests_passed, total_tests, tests, tests_failed
+    return tests_passed, total_tests, test_results, tests_failed
 
 
 if __name__ == '__main__':
+
     # Test 1
     f = open('problems/e2.test.json', encoding='utf-8')
     test = json.load(f)
 
-    hedyCode = '''
-animals = "gos","gat", "cavall"
-a= animals at random
-print a
-    '''
+    hedyCode = '''animals = "cavall", "gos", "gat"
+print "Vull un " animals at random "."'''
 
-    tests_passed, total_tests, tests_failed = hedy_testing(hedyCode, test)
+    tests_passed, total_tests, test_results, tests_failed = hedy_testing(hedyCode, test)
     print("Tests passed:", tests_passed, "/", total_tests)
     if tests_failed:
         print("Failed tests:")
         for ft in tests_failed:
             print(ft)
 
-    # print(execute_hedy_str(hedyCode, 12))

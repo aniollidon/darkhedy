@@ -9,3 +9,33 @@
     background-color: #191C24;
     border-bottom-color: #00000000;
 }
+
+#htest_result{
+    overflow-x: auto;
+}
+
+.card-title{
+    text-transform: none !important;
+}
+
+.loadable.loading {
+    background: #3e3e4d !important;
+    color: #ffffff00 !important;
+    border-radius: 9px;
+}
+
+.loadable.loading > * {
+    color: #ffffff00 !important;
+}
+
+.loadable.loadable-short.loading {
+    max-width: 25%;
+}
+
+.loadable.loadable-tbox.loading {
+    height: 3em;
+}
+
+code{
+    padding: 0 !important;
+}

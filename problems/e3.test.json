@@ -1,0 +1,24 @@
+{
+  "level": 6,
+  "title": "Salutació",
+  "statement": "Escriu un programa que demani el nom de l'usuari i després saludi a l'usuari. El programa ha de demanar el nom de l'usuari amb el missatge \"Quin és el teu nom?\" i després ha de mostrar el missatge \"Hola [nom]\". Per exemple, si l'usuari introdueix \"Aniol\", el programa ha de mostrar \"Hola Aniol\".",
+  "image": "",
+  "tests": [
+    {
+      "inputs": ["Aniol"],
+      "output": "Quin és el teu nom?\nHola Aniol"
+    },
+    {
+      "inputs": ["Prova"],
+      "output": "Quin és el teu nom?\nHola Prova"
+    }
+  ],
+  "expected": [
+    {"word": "ask",
+     "count": 1
+    },
+    {"word": "print",
+     "count": 1
+    }
+  ]
+}

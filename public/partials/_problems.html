@@ -1,11 +1,85 @@
+<div class="row">
+    <div class="col-xl-3 col-sm-6 grid-margin stretch-card">
+        <div class="card">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-9">
+                        <div class="d-flex align-items-center align-self-start">
+                            <h3 class="mb-0" id="stats-punt-total"> </h3>
+                        </div>
+                    </div>
+                </div>
+                <h6 class="text-muted font-weight-normal">Puntuació total</h6>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-sm-6 grid-margin stretch-card">
+        <div class="card">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-9">
+                        <div class="d-flex align-items-center align-self-start">
+                            <h3 class="mb-0 loadable" id="stats-punt-avg"></h3>
+                        </div>
+                    </div>
+                </div>
+                <h6 class="text-muted font-weight-normal">Puntuació més alta a l'activitat</h6>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-sm-6 grid-margin stretch-card">
+        <div class="card">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-9">
+                        <div class="d-flex align-items-center align-self-start">
+                            <h3 class="mb-0 loadable" id="stats-punt-problem"></h3>
+                            <p class="text-danger ms-2 mb-0 font-weight-medium" id="stats-punt-problem-percent">
+                               -3</p>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="icon" id="stats-punt-problem-arrow">
+                            <span class="mdi icon-item"></span>
+                        </div>
+                    </div>
+                </div>
+                <h6 class="text-muted font-weight-normal">Aconseguit en l'activitat</h6>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-sm-6 grid-margin stretch-card">
+        <div class="card">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-9">
+                        <div class="d-flex align-items-center align-self-start">
+                            <h3 class="mb-0 loadable" id="stats-execs-problem">0 </h3>
+                            <p class="text-success ms-2 mb-0 font-weight-medium" id="stats-execs-problem-percent">
+                                +2</p>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="icon" id="stats-execs-problem-arrow">
+                            <span class="mdi icon-item" ></span>
+                        </div>
+                    </div>
+                </div>
+                <h6 class="text-muted font-weight-normal">Execucions fallides</h6>
+            </div>
+        </div>
+    </div>
+</div>
+
 <ul class="nav nav-tabs" role="tablist" id="tabs-problems">
 </ul>
+
 <div class="row">
     <div class="col-12 grid-margin stretch-card">
         <div class="card">
             <div class="card-body">
-                <h4 id="statement-title" class="card-title">Title</h4>
-                <div id="statement"></div>
+                <h4 id="statement-title" class="card-title loadable loadable-short">Title</h4>
+                <div id="statement" class="loadable loadable-tbox"></div>
                 <noscript>Hedy requires Javascript to be enabled in your browser.</noscript>
             </div>
         </div>
@@ -13,29 +87,27 @@
 </div>
 
 <div class="row">
-    <div class="col-md-4 grid-margin stretch-card">
+    <!-- confetti -->
+    <script src="/js/ext/js-confetti.browser.js"></script>
+    <canvas id="confetti" style="width: 100%; height: 100%; display: none; position: absolute; z-index: 9999;"></canvas>
+
+
+    <div class="col-md-6 grid-margin stretch-card">
         <div class="card">
             <div class="card-body">
-                <h4 class="card-title">Codi</h4>
-                <select id="htest_problem"> </select>
+                <h4 class="card-title loadable loadable-short">Codi a nivell <span id="level-indicator"> </span></h4>
+                <select id="htest_problem" style="display: none"> </select>
                 <div class="w-full max-w-screen-2xl mx-auto" id="code_content_container">
                     <div tabindex="0" class="">
-                        <div id="editor-area"
-                             class="">
-                            <div data-devmodeheight="22rem,36rem" class="flex flex-col order-1 relative"
-                                 id="code_editor"
-                                 style="height: 22rem">
-                                <!-- The actual editor -->
-                                <div id="editor"
-                                     style="background: #272822; font-size:0.95em; color: white; direction: ltr;"
-                                     lang="en" blurred='false'
-                                     class="w-full flex-1 text-lg rounded min-h-0 overflow-hidden fixed-editor-height"></div>
-                            </div>
+                        <div id="editor-area" class="">
+                            <!-- editor -->
                         </div>
                         <!-- buttons toolbar -->
                         <div class="flex justify-between mt-4">
                             <div>
+                                 <button class="btn btn-secondary" id="htest_tohedy">Obre a hedy</button>
                                 <button class="btn btn-primary" id="htest_submit">Testeja el teu codi</button>
+                                <span id="htest-final-message"></span>
                             </div>
                         </div>
                     </div>
@@ -44,7 +116,7 @@
         </div>
     </div>
 
-    <div class="col-md-8 grid-margin stretch-card">
+    <div class="col-md-6 grid-margin stretch-card">
         <div class="card">
             <div class="card-body">
                 <h4 class="card-title">Resultats</h4>
@@ -60,7 +132,7 @@
     </div>
 </div>
 
-<div class="row"   id="test-aux-info" style="display: none">
+<div class="row" id="test-aux-info" style="display: none">
     <div class="col-12 grid-margin stretch-card">
         <div class="card">
             <div class="card-body" id="test-aux-info-content">
@@ -69,29 +141,21 @@
     </div>
 </div>
 
-<script src="https://d1xliaqnpftsm2.cloudfront.net/static-703b8d8b27d10850673f07cc7f15c740d4612f0b/vendor/jquery.min.js"
+<script src="/js/ext/jquery.min.js"
         type="text/javascript" crossorigin="anonymous"></script>
-<script src="https://d1xliaqnpftsm2.cloudfront.net/static-703b8d8b27d10850673f07cc7f15c740d4612f0b/vendor/htmx-1.8.5.min.js"
+<script src="/js/ext/htmx-1.8.5.min.js"
         type="text/javascript" crossorigin="anonymous"></script>
-<script src="https://d1xliaqnpftsm2.cloudfront.net/static-703b8d8b27d10850673f07cc7f15c740d4612f0b/js/appbundle.js"
+<script src="/js/ext/appbundle.js"
         type="text/javascript" crossorigin="anonymous"></script>
 
-<script>hedyApp.initialize({
-    lang: "en",
-    level: 12,
-    keyword_language: "en",
+<script src="/js/ext/diff.min.js"></script>
+<script src="/js/problems.js"></script>
 
-    javascriptPageOptions: {
-        "page": "code",
-        "lang": "en",
-        "level": 12,
-        "suppress_save_and_load_for_slides": true
-    },
-});
+<script>
+    init_editor(1, "");
 </script>
 
 
-<script src="js/ext/diff.min.js"></script>
-<script src="js/problems.js"></script>
+
 
 
