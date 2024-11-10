@@ -1,17 +1,17 @@
-from flask import Flask, request, jsonify, send_from_directory, g
-from hedy_basic import execute_hedy_str, hedy_testing
+from flask import Flask, request, jsonify, send_from_directory, make_response
+from hedy_base.base import testing_execute_hedy_str, hedy_testing
 import os
 import json
 import build_front
 import db.database as db
 import sys
 import jinja_partials
-import datetime
+import base64
 
 """ Necessari per el funcionament de les funcions HEDY
 """
 
-sys.path.append('hedy/')
+sys.path.append('hedy_base/hedy_web')
 from website.flask_helpers import render_template, proper_tojson, JinjaCompatibleJsonProvider
 from website import querylog
 from flask_babel import Babel
@@ -25,7 +25,7 @@ def get_locale():
     return 'ca'
 
 
-#app.config['SEND_FILE_MAX_AGE_DEFAULT'] = datetime.timedelta(minutes=5)
+# app.config['SEND_FILE_MAX_AGE_DEFAULT'] = datetime.timedelta(minutes=5)
 
 babel = Babel(app, locale_selector=get_locale)
 jinja_partials.register_extensions(app)
@@ -47,8 +47,8 @@ def before_request_begin_logging():
 
 # ####################################################################################
 
-db.add_user('1234', 'Aniol')
-db.add_user('0000', 'Aniol2')
+def b64e(s):
+    return base64.b64encode(s.encode()).decode()
 
 
 def calcular_punts(temps, execucions=0, warning=False):
@@ -56,6 +56,10 @@ def calcular_punts(temps, execucions=0, warning=False):
     jugadors = float(db.count_users())
     punitaria = 1000.
     tmax = activitats * jugadors
+
+    if jugadors <= 1:
+        return 0
+
     emax = jugadors * punitaria / (activitats * (jugadors - 1)) - 1
 
     if execucions > 0:  # Penalització per execucions
@@ -82,7 +86,7 @@ def hedy():
         inputs = request.json['inputs']
 
     try:
-        resultat = execute_hedy_str(codi, nivell, inputs)
+        resultat = testing_execute_hedy_str(codi, nivell, inputs)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -119,13 +123,14 @@ def hedy_run_test():
             intent = db.get_intents(user, problem_name)
 
             if tests_passed == total_tests:
-                position = db.add_to_ranking(user, problem_name)
+                dhtime = db.get_last_hdtemps()
 
                 # busca warnings
                 warning = len([t for t in test_results if t['result'] == 'execution_warning']) > 0
-                puntuacio = calcular_punts(position, intent - 1, warning)
+                puntuacio = calcular_punts(dhtime, intent - 1, warning)
                 print('Puntuació:', puntuacio)
                 db.update_puntuacio(user, problem_name, 'passed', puntuacio)
+                db.store_success(user, problem_name, puntuacio)
 
         return jsonify({'tests_passed': tests_passed, 'total_tests': total_tests,
                         'tests': test_results, 'tests_failed': tests_failed, 'intent': intent}), 200
@@ -133,9 +138,67 @@ def hedy_run_test():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/stats/acumulat')
+def get_stats_acumulat():
+    return jsonify(db.retorna_historic_acumulat())
+
+
+@app.route('/api/stats/ranquing')
+def get_stats_ranquing():
+    return jsonify(db.ranquing())
+
+
 @app.route('/')
 def serve_index():
     return build_front.base(build_front.problems_test())
+
+
+@app.route('/stats')
+def serve_stats():
+    return build_front.base(build_front.stats())
+
+
+@app.route('/login')
+def serve_login():
+    return build_front.login()
+
+
+@app.route('/', methods=['POST'])
+def serve_index_and_login():
+    response = make_response(build_front.base(build_front.problems_test()))
+
+    if 'name' in request.form:
+        name = request.form['name']
+        image = request.form['image']
+        color = request.form['color']
+        # Generate a username from the name: all lowercase, no spaces (use -), no special characters
+        user_b = name.lower().replace(' ', '-')
+        user_b = ''.join(e for e in user_b if e.isalnum())
+
+        # If the username already exists, add a number at the end
+        if not db.user_exists(user_b):
+            userid = user_b
+        else:
+            i = 1
+            while True:
+                userid = user_b + str(i)
+                if not db.user_exists(userid):
+                    break
+                i += 1
+
+        # Put caps in name (first letter of each word)
+        name = ' '.join([word.capitalize() for word in name.split(' ')])
+
+        db.add_user(userid, name, image, color)
+        # La cookie caduca en 10 dies
+        cookie_time = 60 * 60 * 24 * 10
+
+        response.set_cookie('user_name', name, max_age=cookie_time)
+        response.set_cookie('user_id', userid, max_age=cookie_time)
+        response.set_cookie('user_image', b64e(image), max_age=cookie_time)
+        response.set_cookie('user_color', b64e(color), max_age=cookie_time)
+
+    return response
 
 
 @app.route('/<path:path>')
@@ -180,3 +243,5 @@ def get_puntuacio(user, problem):
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
+
+# https: // editor.dicebear.com /

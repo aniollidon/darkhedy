@@ -1,19 +1,25 @@
 from tinydb import TinyDB, Query
 from datetime import datetime
+import os
 
 users = TinyDB('db/users.json')
 intents = TinyDB('db/intents.json')
-ranking = TinyDB('db/ranking.json')
+historic = TinyDB('db/historic.json')
 
 
 def count_users():
     return len(users)
 
 
-def add_user(user_id, nom):
+def add_user(user_id, nom, imatge, color):
     User = Query()
     if len(users.search(User.user == user_id)) == 0:
-        users.insert({'user': user_id, 'nom': nom, 'puntuacio': 0, 'problems': {}})
+        users.insert({'user': user_id, 'nom': nom, 'imatge': imatge, 'color': color, 'puntuacio': 0, 'problems': {}})
+
+
+def user_exists(user_id):
+    User = Query()
+    return len(users.search(User.user == user_id)) > 0
 
 
 def update_puntuacio(user, problem_name, problem_status, suma_punts):
@@ -49,33 +55,26 @@ def add_intent(user, problem_name, tests_passed, total_tests, test_results, test
                     'test_results': test_results, 'tests_failed': tests_failed, 'timestamp': date_time})
 
 
-def add_to_ranking(user, problem_name):
-    Problem = Query()
-
-    if problem_name not in ranking:
-        ranking.insert({'problem': problem_name, 'users': []})
-
-    users = ranking.search(Problem.problem == problem_name)[0]['users']
-
-    if user not in users:
-        ranking.update({'problem': problem_name, 'users': users + [user]})
-
-    # return position
-    return ranking.search(Problem.problem == problem_name)[0]['users'].index(user) + 1
+def get_last_hdtemps():
+    return len(historic)
 
 
-def get_position_in_ranking(user, problem_name):
-    Problem = Query()
-
-    if problem_name not in ranking:
-        return -1
-
-    return ranking.search(Problem.problem == problem_name)[0]['users'].index(user) + 1
+def store_success(user, problem_name, punts):
+    historic.insert({'user': user,
+                     'problem': problem_name,
+                     'puntuacio': punts,
+                     'timestamp': datetime.now().strftime("%m/%d/%Y, %H:%M:%S")})
 
 
 def get_puntuacio(user, problem):
     User = Query()
-    dbusr = users.search(User.user == user)[0]
+    search = users.search(User.user == user)
+
+    if len(search) == 0:
+        return {"total_punts": 0, "total_users": 0,
+                "problema": {'problem_status': 'unsolved', 'punts': 0, 'timestamp': '-', 'intents': 0}}
+
+    dbusr = search[0]
     dbproblems = dbusr['problems']
     total = dbusr['puntuacio']
 
@@ -120,3 +119,52 @@ def get_puntuacio(user, problem):
     return {"total_punts": total,
             "total_users": count_u,
             "problema": probs}
+
+
+def retorna_historic_acumulat():
+    # Retorna un array de diccionaris amb el següent format [{ name: 'USERNAME', data: [0,1,1,1,2,2,2,3,3,3] }, ...]
+    # on cada element de data és una posició de hdtemps (històric de temps)
+    # i cada element de name és el nom de l'usuari
+    out = {u['user']: {"name": u['nom'], "color": u['color'], "data": [0]} for u in users.all()}
+
+    if len(historic) == 0:
+        return out
+
+    # Crea un diccionari amb els usuaris i les seves puntuacions acumulades al temps
+    for h in historic.all():
+        user = h['user']
+        for u in out:
+            last_puntuacio = out[u]['data'][-1]
+            if u == user:
+                nova_puntuacio = last_puntuacio + h['puntuacio']
+                out[user]['data'].append(nova_puntuacio)
+            else:
+                out[u]['data'].append(last_puntuacio)
+    return out
+
+
+def ranquing():
+    # Crea un diccionari amb els usuaris i les seves puntuacions acumulades al temps
+
+    conta_problemes = float(len(os.listdir("problems")))
+    out = {u['user']: {"name": u['nom'], 'imatge': u['imatge'], "punts": 0, "temps_acumulat": 0, "assolits": 0,
+                       "execucions_fallides": 0, 'percent_assolits': 0} for u in users.all()}
+
+    if len(historic) == 0:
+        return out
+
+    temps_inicial = historic.all()[0]['timestamp']
+    for h in historic.all():
+        temps = (datetime.strptime(h['timestamp'], "%m/%d/%Y, %H:%M:%S")
+                 - datetime.strptime(temps_inicial, "%m/%d/%Y, %H:%M:%S"))
+        temps_s = temps.total_seconds()
+        problem = h['problem']
+        user = h['user']
+        out[user]['execucions_fallides'] += get_intents(user, problem) - 1
+        out[user]['punts'] += h['puntuacio']
+        out[user]['temps_acumulat'] += temps_s
+        out[user]['assolits'] += 1
+        out[user]['percent_assolits'] = float(out[user]['assolits']) / conta_problemes * 100
+
+    # sort by punts
+    return sorted(out.values(), key=lambda x: x['punts'], reverse=True)

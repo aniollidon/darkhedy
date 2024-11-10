@@ -1,23 +1,5 @@
 let current_tab = undefined;
 
-function check_access(access_code) {
-    // todo: millorar
-    return access_code && access_code.length === 4 ; //access_code === "1234";
-}
-
-let access_code = localStorage.getItem('access_code');
-
-if (!check_access(access_code)) {
-    access_code = prompt("Introdueix el teu codi d'accés", "")
-}
-
-if (check_access(access_code)) {
-    localStorage.setItem('access_code', access_code);
-} else {
-    document.body.innerHTML = "Accés denegat, recarrega la pàgina i torna-ho a intentar.";
-}
-
-
 function init_editor(level, code=""){
     document.getElementById('editor-area').innerHTML = `
     <div data-devmodeheight="22rem,36rem" class="flex flex-col order-1 relative"
@@ -75,7 +57,7 @@ function putProblem(problem) {
             'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-            user: localStorage.getItem('access_code')
+            user:  localStorage.getItem('userId')
         })})
         .then(response => response.json())
         .then(data => {
@@ -92,6 +74,7 @@ function putProblem(problem) {
     }
     else {
         document.getElementById('htest_result').innerHTML = '';
+        document.getElementById('resultats_card').style.display = 'none';
         document.getElementById('test-aux-info').style.display = 'none';
     }
 
@@ -121,7 +104,7 @@ function putPuntuacio(puntuacio) {
 
 
     document.getElementById('stats-punt-total').innerHTML = ptotal;
-    document.getElementById('stats-punt-avg').innerHTML = pmax + " punts";
+    //document.getElementById('stats-punt-avg').innerHTML = pmax + " punts";
     document.getElementById('stats-punt-problem').innerHTML = pproblema + " punts";
     document.getElementById('stats-punt-problem-percent').innerHTML =
         pdiff===0? "": pdiff > 0? "+" + pdiff: pdiff + " lluny";
@@ -172,7 +155,7 @@ function putPuntuacio(puntuacio) {
 
 function getPuntuacions(problem) {
     ///api/users/<user>/problems/<problem>/puntuacio
-    fetch("/api/users/" + localStorage.getItem('access_code') + "/problems/" + problem + "/puntuacio")
+    fetch("/api/users/" +  localStorage.getItem('userId') + "/problems/" + problem + "/puntuacio")
         .then(response => response.json())
         .then(data => {
             putPuntuacio(data);
@@ -202,6 +185,8 @@ function put_results(data, test) {
     let warnings = data.tests_failed.filter(test => test.type === 'execution_warning');
 
     const out = document.getElementById('htest_result');
+    document.getElementById('resultats_card').style.display = '';
+
     const auxContainer = document.getElementById('test-aux-info');
     const aux = document.getElementById('test-aux-info-content');
     out.innerHTML = '';
@@ -391,7 +376,7 @@ document.getElementById('htest_submit').addEventListener('click', function () {
         body: JSON.stringify({
             test_file: test,
             code: code,
-            user: localStorage.getItem('access_code')
+            user: localStorage.getItem('userId')
         })
     }).then(response => response.json())
         .then(data => {
